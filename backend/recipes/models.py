@@ -1,13 +1,17 @@
 # from django.conf import settings
+from django.core.validators import MinValueValidator
 from django.db import models
 from users.models import User
+
+from multiselectfield import MultiSelectField
+
 
 class Recipe(models.Model):
     """A model for creating recipes."""
 
     tags = models.ManyToManyField(
-        'Tags',
-        through='Tag',
+        'Tag',
+        through='RecipeTag',
         related_name='tags',
         verbose_name='Тэги'
     )
@@ -17,30 +21,23 @@ class Recipe(models.Model):
         verbose_name='Автор'
     )
     ingredients = models.ManyToManyField(
-        'Ingredients',
-        through='Ingredient',
+        'Ingredient',
+        through='RecipeIngredient',
         related_name='ingredients',
-        verbose_name='Тэги'
+        verbose_name='Ингредиенты'
     )
-    # is_favorited = models.BooleanField(
-    #     verbose_name='Находится ли в избранном'
-    # )
-    # is_in_shopping_cart = models.BooleanField(
-    #     verbose_name='Находится ли в корзине'
-    # )
     name = models.CharField(
         max_length=200,
         verbose_name='Название рецепта'
         )
     image = models.ImageField(
-        upload_to='foodgram/',
+        upload_to='recipes/images/',
         verbose_name='Картинка'
     )
     text = models.TextField(verbose_name='Описание')
     cooking_time = models.PositiveSmallIntegerField(verbose_name='Время приготовления')
 
     class Meta:
-        ordering = ['-pub_date']
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
@@ -48,14 +45,12 @@ class Recipe(models.Model):
         return self.text
 
 
-# class Subscribtions(models.Model):
-#     """А model for subscriptions to recipes."""
-
-
 class Tag(models.Model):
     """Tags for recipes."""
-    name = models.CharField(
+
+    name = models.CharField(  # MultiSelectField
         max_length=200,
+        #choices=RECIPES_TAGS,
         verbose_name='Название тэга')
     color = models.CharField(max_length=7, default="#ffffff")
     slug = models.SlugField(
@@ -65,10 +60,22 @@ class Tag(models.Model):
 
     def __str__(self) -> str:
         return self.name
+    
+
+class RecipeTag(models.Model):
+    """Links tags to recipes."""
+
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    tags = models.ForeignKey(Tag, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.recipe} {self.tags}'
 
 
 class Ingredient(models.Model):
     """This model creates a list of ingredients."""
+    
+    #id = models.AutoField(primary_key=True, db_column='ingredient_id')
     name = models.CharField(
         max_length=200,
         verbose_name='Название ингредиента')
@@ -77,12 +84,25 @@ class Ingredient(models.Model):
         verbose_name='Единицы измерения'
     )
 
+    class Meta:
+        verbose_name = 'Ингредиент'
+        verbose_name_plural = 'Ингредиенты'
+    
     def __str__(self) -> str:
         return self.name
 
-# class FavoriteRecipes(models.Model):
-#     """This model adds recipes to favorites."""
 
+class RecipeIngredient(models.Model):
+    """For counting recipe's ingredients."""
 
-# class ShoppingCart(models.Model):
-#     """This model creates a shopping list"""
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    amount = models.PositiveSmallIntegerField(validators=(
+            MinValueValidator(
+                1, 'Минимум 1.'
+            ),
+        ), verbose_name='Количество ингредиентов')
+
+    def __str__(self):
+        return f'{self.ingredient} {self.amount}'
+
