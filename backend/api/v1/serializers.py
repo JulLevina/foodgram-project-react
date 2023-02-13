@@ -2,10 +2,54 @@ import base64
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
+from djoser.serializers import UserCreateSerializer
 from rest_framework import serializers
 
-from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag, RecipeTag
+from recipes.models import Ingredient, Favorite, Follows, Recipe, RecipeIngredient, Tag, RecipeTag
 from users.models import User
+
+
+# class UserSerializer(serializers.ModelSerializer):
+#     """Reterns JSON-data all of User's model fields
+#     for the api/v1/users/ endpoint."""
+#     is_subscribed = serializers.BooleanField()
+    
+#     class Meta:
+#         model = User
+#         fields = (
+#             'id',
+#             'email',
+#             'username',
+#             'first_name',
+#             'last_name',
+#             'is_subscribed'
+#         )
+#         model = User
+    
+#     # def create(self, validated_data):
+#     #     user = User(
+#     #         email=validated_data['email'],
+#     #         username=validated_data['username']
+#     #     )
+#     #     user.set_password(validated_data['password'])
+#     #     user.save()
+#     #     return user
+
+
+class UserCreateSerializer(UserCreateSerializer):
+    """ """
+
+    #is_subscribed = serializers.BooleanField()
+
+    class Meta(UserCreateSerializer.Meta):
+        model = User
+        fields = (
+            'email',
+            'username',
+            'first_name',
+            'last_name',
+            'password'
+            )
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -73,13 +117,13 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
     tags = TagSerializer(read_only=True, many=True)
     ingredients = IngredientSerializer(read_only=True, many=True)
-    print(ingredients)
 
     class Meta:
         fields = (
             'id',
             'tags',
             'author',
+            'is_favorited',
             'ingredients',
             'name',
             'image',
@@ -98,13 +142,13 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     image = Base64ImageField(required=False, allow_null=True) # change on True
     ingredients = RecipeIngredientSerializer(source='recipeingredient_set', many=True)
     
-    
     class Meta:
         fields = (
             'ingredients',
             'tags',
             'image',
             'author',
+            'is_favorited',
             'name',
             'text',
             'cooking_time'
@@ -112,11 +156,13 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         model = Recipe
     
     
-    def ingredients_creating(self, ingredients, recipe):
+    def ingredients_creating(self, ingredients, recipe, tags):
+        recipe.tags.set(tags)
+        RecipeIngredient.objects.filter(recipe=recipe).delete()
         RecipeIngredient.objects.bulk_create(
             [
                 RecipeIngredient(recipe=recipe,
-                ingredient=ingredient.get('id'),
+                ingredient=ingredient.get('id'), # не получается применить get_object_or_404, но можно get('id')
                 amount=ingredient.get('amount')) for ingredient in ingredients
                 ] 
                 )
@@ -126,11 +172,65 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         ingredients = validated_data.pop('recipeingredient_set')
         recipe = Recipe.objects.create(**validated_data)
         recipe.save()
-        recipe.tags.set(tags)
-        self.ingredients_creating(ingredients, recipe)
+        #recipe.tags.set(tags)
+        self.ingredients_creating(ingredients, recipe, tags)
         return recipe
     
-    # def update(self, instance, validated_data):
+    def update(self, instance, validated_data):  # instance - ссфлка на объект модели Recipe,
+                                                 #validated_data - словарь из проверенных данных, к-й нужно изменить
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('recipeingredient_set')
+        super().update(instance, validated_data)
+        self.ingredients_creating(ingredients, instance, tags)
+        instance.save()
+        return instance
 
-    #     return super().update(instance, validated_data)
+
+# class FavoriteRecipeSerializer(serializers.ModelSerializer):
+#     """Reterns JSON-data all of Favorite's model fields
+#     for the api/v1/recipes/{id}/favorite endpoint"""
+
+#     name = serializers.ReadOnlyField(source='get_name')
+#     image = serializers.ReadOnlyField(source='get_image')
+#     cooking_time = serializers.ReadOnlyField(source='get_cooking_time')
+
+    
+#     class Meta:
+#         fields = (
+#             'id',
+#             'name',
+#             'image',
+#             'cooking_time',
+#         )
+#         model = Recipe
+    
+# class FavoriteSerializer(serializers.ModelSerializer):
+
+#     #recipe = FavoriteRecipeSerializer(read_only=True)
+
+#     def to_representation(self, instance):
+#         ret = Favorite.to_representation(instance)
+#         return ret['recipe']
+
+#     class Meta:
+#         fields = (
+#             'recipe',
+#         )
+#         model = Favorite
+
+class FollowSerializer(serializers.ModelSerializer):
+    """Reterns JSON-data all of Follows's model fields
+    for the api/v1/users/{id}/subscribe endpoint."""
+
+    
+    class Meta:
+        fields = (
+            'id',
+        )
+        model = Follows
+    
+    
+
+
+
 

@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -19,13 +20,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework_simplejwt',
+    'rest_framework.authtoken',
     'django_filters',
+    'djoser',
     'api.apps.ApiConfig',
     'recipes.apps.RecipesConfig',
     'users.apps.UsersConfig',
     'multiselectfield',
 ]
+
+AUTH_USER_MODEL = 'users.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -98,3 +102,38 @@ STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static/'),)
 MEDIA_URL = '/media/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated', 
+    ],
+
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 6,
+}
+
+# SIMPLE_JWT = {
+#    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+#    'AUTH_HEADER_TYPES': ('Bearer',),
+# }
+
+DJOSER = {
+    "HIDE_USERS": False,
+    'PERMISSIONS': {
+
+    'user': ['rest_framework.permissions.AllowAny'],
+    'user_list': ['rest_framework.permissions.AllowAny'],
+
+    },
+
+    "SERIALIZERS": {
+        "user_create": "api.v1.serializers.UserCreateSerializer",  # custom serializer
+        "user": "djoser.serializers.UserSerializer",
+        "current_user": "djoser.serializers.UserSerializer",
+        "user_delete": "djoser.serializers.UserSerializer",
+    },
+}

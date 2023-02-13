@@ -1,10 +1,14 @@
 from django.contrib import admin
 
-from .models import Ingredient, Recipe, Tag, RecipeIngredient, RecipeTag
+from .models import Ingredient, Favorite, Follows, Recipe, Tag, RecipeIngredient, RecipeTag
 
 
 class RecipeIngredientInline(admin.StackedInline):
     model = RecipeIngredient
+    min_num = 1
+
+class RecipeTagInline(admin.StackedInline):
+    model = RecipeTag
     min_num = 1
 
 @admin.register(Recipe)
@@ -15,7 +19,8 @@ class RecipeAdmin(admin.ModelAdmin):
         'name',
         'image',
         'text',
-        'cooking_time'
+        'cooking_time',
+        'pub_date'
     )
     search_fields = (
         'name',
@@ -29,7 +34,7 @@ class RecipeAdmin(admin.ModelAdmin):
     )
     list_per_page = 6
     filter_horizontal = ['ingredients', 'tags']
-    inlines = [RecipeIngredientInline]
+    inlines = [RecipeIngredientInline, RecipeTagInline]
     empty_value_display = '-пусто-'
 
 
@@ -53,3 +58,5 @@ class TagAdmin(admin.ModelAdmin):
 admin.site.register(Ingredient)
 admin.site.register(RecipeIngredient)
 admin.site.register(RecipeTag)
+admin.site.register(Favorite)
+admin.site.register(Follows)
