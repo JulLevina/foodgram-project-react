@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'recipes.apps.RecipesConfig',
     'users.apps.UsersConfig',
     'multiselectfield',
+    'core.apps.CoreConfig',
 ]
 
 AUTH_USER_MODEL = 'users.User'
@@ -115,11 +116,6 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 6,
 }
-
-# SIMPLE_JWT = {
-#    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-#    'AUTH_HEADER_TYPES': ('Bearer',),
-# }
 
 DJOSER = {
     "HIDE_USERS": False,

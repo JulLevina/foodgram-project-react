@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Ingredient, Favorite, Follows, Recipe, Tag, RecipeIngredient, RecipeTag
+from .models import Ingredient, Favorite, Follows, Recipe, Tag, RecipeIngredient, RecipeTag, ShoppingCart
 
 
 class RecipeIngredientInline(admin.StackedInline):
@@ -54,9 +54,19 @@ class TagAdmin(admin.ModelAdmin):
     )
     empty_value_display = '-пусто-'
 
+@admin.register(Ingredient)
+class IngredientAdmin(admin.ModelAdmin):
+    list_display = (
+        'name',
+        'measurement_unit',
+        'pk'
+    ) 
+    list_filter = (
+        'name',
+    )
 
-admin.site.register(Ingredient)
 admin.site.register(RecipeIngredient)
 admin.site.register(RecipeTag)
 admin.site.register(Favorite)
 admin.site.register(Follows)
+admin.site.register(ShoppingCart)
