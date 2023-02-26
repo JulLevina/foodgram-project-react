@@ -13,8 +13,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         call_command('migrate')
-        with open(os.path.join(settings.BASE_DIR,
-                    f'data/ingredients.csv'),
-                    'r', encoding='utf8') as file_scv:
+        with open(
+            os.path.join(
+                settings.BASE_DIR,
+                'data/ingredients.csv'
+            ), 'r', encoding='utf8'
+        ) as file_scv:
             csv_reader = csv.DictReader(file_scv)
-            Ingredient.objects.bulk_create(Ingredient(**data) for data in csv_reader)
+            Ingredient.objects.bulk_create(
+                Ingredient(**data) for data in csv_reader
+            )

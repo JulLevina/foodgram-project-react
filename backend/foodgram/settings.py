@@ -1,5 +1,4 @@
 import os
-from datetime import timedelta
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -106,14 +105,14 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated', 
+        'rest_framework.permissions.IsAuthenticated',
     ],
 
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
 
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'DEFAULT_PAGINATION_CLASS': 'api.v1.pagination.FoodgramPagination',
     'PAGE_SIZE': 6,
 }
 
@@ -127,9 +126,9 @@ DJOSER = {
     },
 
     "SERIALIZERS": {
-        "user_create": "api.v1.serializers.UserCreateSerializer",  # custom serializer
-        "user": "djoser.serializers.UserSerializer",
-        "current_user": "djoser.serializers.UserSerializer",
+        "user_create": "api.v1.serializers.UserCreateSerializer",
+        "user": "api.v1.serializers.CustomUserSerialiser",
+        "current_user": "api.v1.serializers.CustomUserSerialiser",
         "user_delete": "djoser.serializers.UserSerializer",
     },
 }
