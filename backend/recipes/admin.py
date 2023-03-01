@@ -4,7 +4,6 @@ from django.db.models import Count
 from .models import (
     Ingredient,
     Favorite,
-    Follows,
     Recipe,
     Tag,
     RecipeIngredient,
@@ -14,16 +13,16 @@ from .models import (
 
 
 class RecipeIngredientInline(admin.StackedInline):
-    """Links ingredients to recipes.
-    You won't be able to create a recipe without ingredients."""
+    """Связывает ингредиенты с рецептами.
+    Предотвращает возможность создания рецепта без ингредиентов."""
 
     model = RecipeIngredient
     min_num = 1
 
 
 class RecipeTagInline(admin.StackedInline):
-    """Links tags to recipes.
-    You won't be able to create a recipe without tags."""
+    """Связывает тэги с рецептами.
+    Предотвращает возможность создания рецепта без тэгов."""
 
     model = RecipeTag
     min_num = 1
@@ -31,7 +30,7 @@ class RecipeTagInline(admin.StackedInline):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    """Sets up work with the Recipe's model in the admin panel."""
+    """Позволяет работать с моделью рецептов в панели администратора."""
 
     list_display = (
         'pk',
@@ -41,7 +40,7 @@ class RecipeAdmin(admin.ModelAdmin):
         'text',
         'cooking_time',
         'pub_date',
-        'favorite_count'
+        'favorites_count'
     )
     search_fields = (
         'name',
@@ -58,18 +57,18 @@ class RecipeAdmin(admin.ModelAdmin):
     inlines = [RecipeIngredientInline, RecipeTagInline]
     empty_value_display = '-пусто-'
 
-    def favorite_count(self, object):
-        return object.favorite_count
+    def favorites_count(self, object):
+        return object.favorites_count
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        queryset = queryset.annotate(favorite_count=Count('favorite'))
+        queryset = queryset.annotate(favorites_count=Count('favorites'))
         return queryset
 
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
-    """Sets up work with the Tag's model in the admin panel."""
+    """Позволяет работать с моделью тэгов в панели администратора."""
 
     list_display = (
         'pk',
@@ -88,7 +87,7 @@ class TagAdmin(admin.ModelAdmin):
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
-    """Sets up work with the Ingredient's model in the admin panel."""
+    """Позволяет работать с моделью ингредиентов в панели администратора."""
 
     list_display = (
         'name',
@@ -103,5 +102,4 @@ class IngredientAdmin(admin.ModelAdmin):
 admin.site.register(RecipeIngredient)
 admin.site.register(RecipeTag)
 admin.site.register(Favorite)
-admin.site.register(Follows)
 admin.site.register(ShoppingCart)

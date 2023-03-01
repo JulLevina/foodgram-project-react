@@ -1,14 +1,14 @@
 from rest_framework import permissions
 
 
-class IsAuthorOrAdminOrReadOnly(permissions.BasePermission):
+class IsAuthorOrReadOnly(permissions.BasePermission):
     """
-    Grants the right to create content to the administrator and the author.
+    Предоставляет право изменения контента только автору.
     """
 
     message = (
         'Для создания контента необходимо обладать '
-        'правами администратора или автора.'
+        'правами автора.'
     )
 
     def has_permission(self, request, view):
@@ -21,17 +21,4 @@ class IsAuthorOrAdminOrReadOnly(permissions.BasePermission):
         return (
             request.method in permissions.SAFE_METHODS
             or obj.author == request.user
-            or request.user.is_admin
-        )
-
-
-class AdminOrReadOnly(permissions.BasePermission):
-    """Grants the right to create content to the administrator."""
-
-    message = 'Только для администратора!'
-
-    def has_permission(self, request, view):
-        return (
-            request.method in permissions.SAFE_METHODS
-            or request.user.is_admin
         )

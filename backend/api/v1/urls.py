@@ -17,6 +17,6 @@ v1_router.register('users', FollowsViewSet, basename='users')
 
 urlpatterns = [
     path('', include(v1_router.urls)),
-    re_path(r'^auth/', include('djoser.urls')),
-    re_path(r'^auth/', include('djoser.urls.authtoken'))
+    # re_path(r'^auth/', include('djoser.urls')),
+    path('auth/', include('djoser.urls.authtoken')),
 ]

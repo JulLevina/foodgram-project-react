@@ -15,42 +15,33 @@ from rest_framework.response import Response
 from recipes.models import (
     Ingredient,
     Favorite,
-    Follows,
     Recipe,
     RecipeIngredient,
     ShoppingCart,
     Tag
 )
-from users.models import User
-from api.v1.permissions import IsAuthorOrAdminOrReadOnly, AdminOrReadOnly
+from users.models import Subscription, User
+from api.v1.permissions import IsAuthorOrReadOnly
 from api.v1.serializers import (
-    IngredientWriteSerializer,
-    IngredientReadSerializer,
-    FavoriteSerializer,
-    FollowSerializer,
-    RecipeReadSerializer,
-    RecipeWriteSerializer,
-    ShoppingCartSerializer,
-    TagSerializer,
-    UserCreateSerializer
+    ingredients,
+    favorites,
+    recipes,
+    shopping_cart,
+    subscribtions,
+    tags,
+    users
 )
-from api.v1.filters import RecipeFilter
+from api.v1.filters import IngredientFilter, RecipeFilter
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
-    """Performs all operations with ingredients.
-    Handles all requests for the api/v1/ingreients/ endpoint."""
+    """Выполняет все операции с ингредиентами.
+    Обрабатывает все запросы для эндпоинта api/v1/ingreients/."""
 
     queryset = Ingredient.objects.order_by('name')
-    filter_backends = (filters.SearchFilter,)
-    permission_classes = (AdminOrReadOnly,)
-    search_fields = ('^name',)
-
-    def get_serializer_class(self):
-        """Defines the serializer."""
-        if self.action != 'create':
-            return IngredientReadSerializer
-        return IngredientWriteSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = IngredientFilter
+    serializer_class = ingredients.IngredientReadSerializer
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -71,7 +62,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """Sets permissions."""
 
         if self.action in {'partial_update', 'destroy'}:
-            self.permission_classes = (IsAuthorOrAdminOrReadOnly,)
+            self.permission_classes = (IsAuthorOrReadOnly,)
         elif self.action in {'list', 'retrieve'}:
             self.permission_classes = (AllowAny,)
         return super().get_permissions()
@@ -79,21 +70,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         """Defines the serializer."""
         if self.action in {'create', 'partial_update'}:
-            return RecipeWriteSerializer
-        return RecipeReadSerializer
+            return recipes.RecipeWriteSerializer
+        return recipes.RecipeReadSerializer
 
     def get_queryset(self):
         """Returns a list of recipes."""
-        return Recipe.objects.exclude(
-            favorite=True).exclude(
-            shoppingcart=True).select_related(
-            'author').order_by('pub_date')
+        return self.queryset.select_related(
+            'author',  # 'is_favorited', 'is_in_shopping_cart', 'is_subscribed'
+            ).order_by('pub_date')
 
     def perform_create(self, serializer):
         """Saves a new instance of the author."""
         serializer.save(author=self.request.user)
 
-    @action(detail=True, methods=['POST', 'DELETE'])
+    @action(detail=True, methods=['POST', ])
     def favorite(self, request, pk):
         """Adds and deletes recipes to favorites.
         Handles 'POST' and 'DELETE' requests
@@ -105,7 +95,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     user=user,
                     recipe=recipe
                 )
-            serializer = FavoriteSerializer(instance)
+            serializer = favorites.FavoriteSerializer(instance)
             try:
                 return Response(
                     data={
@@ -118,15 +108,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     data={'recipe': 'Данный рецепт уже добавлен в избранное'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-        get_object_or_404(
-            Favorite,
-            recipe=recipe,
-            user=self.request.user
-        ).delete()
-        return Response(
-            {'message': 'Рецепт успешно удален из избранного'},
-            status=status.HTTP_200_OK
-        )
+
+    @favorite.mapping.delete
+    def delete_favorite(self, request, pk):
+        pass
+        # get_object_or_404(
+        #     Favorite,
+        #     recipe=recipe,
+        #     user=self.request.user
+        # ).delete()
+        # return Response(
+        #     {'message': 'Рецепт успешно удален из избранного'},
+        #     status=status.HTTP_200_OK
+        # )
 
     @action(detail=True, methods=['POST', 'DELETE'])
     def shopping_cart(self, request, pk):
@@ -139,7 +133,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 user=self.request.user,
                 recipe=recipe
             )
-            serializer = ShoppingCartSerializer(instance)
+            serializer = shopping_cart.ShoppingCartSerializer(instance)
             try:
                 return Response(
                     data={
@@ -204,8 +198,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     Handles all requests for the api/v1/tags/ endpoint."""
 
     queryset = Tag.objects.all()
-    serializer_class = TagSerializer
-    permission_classes = (AdminOrReadOnly,)
+    serializer_class = tags.TagSerializer
 
 
 class FollowsViewSet(UserViewSet):
@@ -213,22 +206,21 @@ class FollowsViewSet(UserViewSet):
     Handles all requests for the api/v1/users/sudscriptions endpoint."""
 
     queryset = User.objects.all()
-    serializer_class = UserCreateSerializer
-    permission_classes = (IsAuthorOrAdminOrReadOnly,)
+    serializer_class = users.UserCreateSerializer
+    permission_classes = (IsAuthorOrReadOnly,)
 
     @action(
-        methods=['GET'],
         detail=False,
-        url_path='subscribtions',
+        url_path='subscriptions',
         permission_classes=(IsAuthenticated,),
     )
-    def subscribtions(self, request):
+    def subscriptions(self, request):
         """Shows user's subscriptions.
         Handles 'GET' request for
         the api/v1/users/subscribtions endpoint."""
-        queryset = Follows.objects.filter(user=request.user)
+        queryset = Subscription.objects.filter(user=request.user)
         pages = self.paginate_queryset(queryset)
-        serializer = FollowSerializer(pages, many=True)
+        serializer = subscribtions.FollowSerializer(pages, many=True)
         return self.get_paginated_response(serializer.data)
 
     @action(
@@ -242,11 +234,11 @@ class FollowsViewSet(UserViewSet):
         the api/v1/users/{id}/subscribe endpoint."""
         author = get_object_or_404(User, pk=self.kwargs['id'])
         if request.method == 'POST':
-            instance = Follows.objects.create(
+            instance = Subscription.objects.create(
                 user=self.request.user,
                 author=author
             )
-            serializer = FollowSerializer(instance)
+            serializer = subscribtions.FollowSerializer(instance)
             try:
                 return Response(
                     data={'Подписка успешно создана': serializer.data},
@@ -260,7 +252,7 @@ class FollowsViewSet(UserViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
         get_object_or_404(
-            Follows,
+            Subscription,
             user=self.request.user,
             author=author
         ).delete()

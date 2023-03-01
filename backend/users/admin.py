@@ -1,11 +1,13 @@
 from django.contrib import admin
 
-from .models import User
+from .models import User, Subscription
 
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    """Sets up work with the User's model in the admin panel."""
+    """
+    Позволяет работать с пользовательской моделью в панели администратора.
+    """
 
     list_display = (
         'pk',
@@ -18,3 +20,6 @@ class UserAdmin(admin.ModelAdmin):
         'email',
         'username'
     )
+
+
+admin.site.register(Subscription)
