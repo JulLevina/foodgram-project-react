@@ -5,9 +5,9 @@ Foodgram - это продуктовый помощник, позволяющи�
 
 #### _Технологии_
 
-- Python 3.7
-- Django 2.2.16
-- DRF 3.12.4
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/4?color=green&label=python&logoColor=grey)
+[![Django](https://img.shields.io/badge/-Django-464646?style=flat-square&logo=Django)](https://www.djangoproject.com/)
+[![Django REST Framework](https://img.shields.io/badge/-Django%20REST%20Framework-464646?style=flat-square&logo=Django%20REST%20Framework)](https://www.django-rest-framework.org/)
 
 #### _Запуск проекта в dev-режиме_
 
@@ -46,30 +46,7 @@ python3 manage.py runserver
 2. Пользователь отправляет POST-запрос с параметрами email и password на эндпоинт /api/v1/auth/token/login/, в ответе на запрос ему приходит auth-token.
 4. При желании пользователь отправляет POST-запрос на эндпоинт /api/v1/users/set_password/ для изменения пароля.
 
-- Запрос на регистрацию пользователя:
-```
-POST api/v1/users/
-```
-```
-body:
-{
-    "username": "Test_User",
-    "email": "Test_email@test.ru"
-    "first_name": "User_Name",
-    "last_name": "User_Last_name",
-    "password": "secret_password"
-}
-```
-- вернет следующий ответ
-```
-{
-    "id": 0,
-    "username": "Test_User",
-    "email": "Test_email@test.ru"
-    "first_name": "User_Name",
-    "last_name": "User_Last_name",
-}
-```
+- С примером запроса на регистрацию пользователя можно ознакомиться в [документации](http://localhost/api/docs/redoc.html)
 
 #### _Примеры запросов к API для неавторизованных пользователей_
 Неавторизованные пользователи могут просматривать главную страницу с рецептами,  а также страницы отдельных рецептов.

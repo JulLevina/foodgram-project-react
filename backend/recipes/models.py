@@ -10,7 +10,7 @@ class Recipe(models.Model):
     tags = models.ManyToManyField(
         'Tag',
         through='RecipeTag',
-        related_name='recipes',  # проверить, в каких запросах используется
+        related_name='recipes',
         verbose_name='Тэги'
     )
     author = models.ForeignKey(

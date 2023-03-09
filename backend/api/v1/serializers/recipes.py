@@ -35,7 +35,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(read_only=True, many=True)
     ingredients = IngredientWriteSerializer(many=True, source='recipes')
     author = UserSerializer(
-        read_only=True)
+       read_only=True)
     is_favorited = serializers.SerializerMethodField(source='get_is_favorited')
     is_in_shopping_cart = serializers.SerializerMethodField(
         'get_is_in_shopping_cart'
@@ -56,22 +56,22 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             'cooking_time'
         )
 
-    def get_is_favorited(self, object) -> bool:  # переименовать переменную и протестировать
+    def get_is_favorited(self, obj) -> bool:
         """Определяет, добавлен ли рецепт в избранное."""
         user = self.context.get('request').user
         if user.is_anonymous:
             return False
         return Favorite.objects.filter(
-            user=user, recipe=object).exists()
+            user=user, recipe=obj).exists()
 
-    def get_is_in_shopping_cart(self, object) -> bool:
+    def get_is_in_shopping_cart(self, obj) -> bool:
         """Определяет, добавлен ли рецепт в список покупок."""
         user = self.context.get('request').user
         if user.is_anonymous:
             return False
         return ShoppingCart.objects.filter(
             user=user,
-            recipe=object
+            recipe=obj
         ).exists()
 
 
@@ -85,24 +85,20 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True
     )
-    image = Base64ImageField(required=False, allow_null=False)
+    image = Base64ImageField(required=False, allow_null=True)
     ingredients = RecipeIngredientSerializer(many=True, allow_null=False)
-    # author = UserShortSerializer(
-    #     read_only=True,
-    #     default=serializers.CurrentUserDefault()
-    # )
 
     class Meta:
         model = Recipe
         fields = (
             'tags',
-            #'author',
             'ingredients',
             'image',
             'name',
             'text',
             'cooking_time'
         )
+        read_only_fields = ['author']
 
     def validate_ingredients(self, ingredients):
         """Предотвращает создание рецепта без ингредиентов.
@@ -144,7 +140,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
-        recipe = super().create(**validated_data)
+        recipe = super().create(validated_data)
         recipe.tags.set(tags)
         self.ingredients_creating(ingredients, recipe, tags)
         return recipe

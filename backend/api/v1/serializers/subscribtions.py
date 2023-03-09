@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from recipes.models import Recipe
-from users.models import Subscription
+from users.models import Subscription, User
 from .favorites import FavoriteRecipeSerializer
 
 
@@ -53,18 +53,45 @@ class FollowSerializer(serializers.ModelSerializer):
             'recipes_count',
         )
 
-    def get_is_subscribed(self, object):
+    def get_is_subscribed(self, obj):
         """Проверяет наличие у текущего пользователя подписки на автора."""
         return Subscription.objects.filter(
-            user=object.user,
-            author=object.author
+            user=obj.user,
+            author=obj.author
         ).exists()
 
-    def get_recipes_count(self, object):
+    def get_recipes_count(self, obj):
         """Вычисляет общее количество рецептов автора."""
-        return Recipe.objects.filter(author=object.author).count()
+        return Recipe.objects.filter(author=obj.author).count()
 
-    def get_recipes(self, object):
+    def get_recipes(self, obj):
         """Возвращает все рецепты данного автора."""
-        recipes = Recipe.objects.filter(author=object.author)
+        recipes = Recipe.objects.filter(author=obj.author)
         return FavoriteRecipeSerializer(recipes, many=True).data
+
+    def validate(self, data):
+        if self.context['request'].method != 'POST':
+            return data
+        author_id = self.context['request'].parser_context['kwargs']['id']
+        user = self.context['request'].user
+        if Subscription.objects.filter(
+            user=user,
+            author_id=author_id
+        ).exists():
+            raise serializers.ValidationError(
+                'Вы уже подписаны на данного автора.'
+            )
+        if not User.objects.filter(id=author_id).exists():
+            raise serializers.ValidationError(
+                'Автор с указанным id не существует.'
+            )
+        if Subscription.objects.filter(user=author_id).exists():
+            raise serializers.ValidationError(
+                'Подписка на самого себя невозможна.'
+            )
+        data['author_id'] = author_id
+        data['user'] = user
+        return data
+
+    def create(self, validated_data):
+        return Subscription.objects.create(**validated_data)

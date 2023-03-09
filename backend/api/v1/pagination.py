@@ -1,7 +1,7 @@
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import LimitOffsetPagination
 
 
-class FoodgramPagination(PageNumberPagination):
+class FoodgramPagination(LimitOffsetPagination):
     """Отображает по 6 объектов ответа на странице."""
 
     limit_query_param = 'limit'

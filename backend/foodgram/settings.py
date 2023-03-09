@@ -25,8 +25,6 @@ INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'recipes.apps.RecipesConfig',
     'users.apps.UsersConfig',
-    'multiselectfield',
-    'core.apps.CoreConfig',
 ]
 
 AUTH_USER_MODEL = 'users.User'
@@ -120,6 +118,7 @@ REST_FRAMEWORK = {
 
     'DEFAULT_PAGINATION_CLASS': 'api.v1.pagination.FoodgramPagination',
     'PAGE_SIZE': 6,
+
 }
 
 DJOSER = {

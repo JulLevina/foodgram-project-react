@@ -21,9 +21,9 @@ class FavoriteRecipeSerializer(serializers.ModelSerializer):
             'cooking_time'
         )
 
-    def get_image_url(self, object):
+    def get_image_url(self, obj):
         """Возвращает url изображения рецепта."""
-        return object.image.url
+        return obj.image.url
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -37,6 +37,26 @@ class FavoriteSerializer(serializers.ModelSerializer):
         fields = (
             'recipe',
         )
+
+    def validate(self, data):
+        if self.context['request'].method != 'POST':
+            return data
+        recipe_id = self.context['request'].parser_context['kwargs']['pk']
+        user = self.context['request'].user
+        if Favorite.objects.filter(user=user, recipe_id=recipe_id).exists():
+            raise serializers.ValidationError(
+                'Вы уже добавили данный рецепт в избранное.'
+            )
+        if not Recipe.objects.filter(id=recipe_id).exists():
+            raise serializers.ValidationError(
+                'Рецепт с указанным id не существует.'
+            )
+        data['recipe_id'] = recipe_id
+        data['user'] = user
+        return data
+
+    def create(self, validated_data):
+        return Favorite.objects.create(**validated_data)
 
     def to_representation(self, instance):
         """Преобразует информацию о рецепте в список полей."""

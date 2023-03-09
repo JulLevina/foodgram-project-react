@@ -42,22 +42,9 @@ class UserSerializer(DjoserUserSerializer):
             'is_subscribed'
         )
 
-    def get_is_subscribed(self, object):
+    def get_is_subscribed(self, obj):
         """Проверяет наличие у текущего пользователя подписки на автора.."""
         user = self.context.get('request').user
-        return Subscription.objects.filter(user=user, author=object).exists()
-
-
-class UserShortSerializer(serializers.ModelSerializer):  #FollowsUserSerializer
-    """Возвращает ограниченный перечнь полей пользовательской модели."""
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'email',
-            'username',
-            'first_name',
-            'last_name'
-        )
-        read_only_fields = ['email', 'username', 'first_name', 'last_name']
+        if user.is_anonymous:
+            return False
+        return Subscription.objects.filter(user=user, author=obj).exists()
