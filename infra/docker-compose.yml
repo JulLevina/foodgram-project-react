@@ -19,8 +19,8 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     volumes:
-      - static_value:/app/static/
-      - media_value:/app/media/
+      - static_value:/app/static/django/
+      - media_value:/app/media/django/
     depends_on:
       db:
         condition: service_healthy
@@ -42,9 +42,12 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ../frontend/build:/usr/share/nginx/html/
-      - ../docs/:/usr/share/nginx/html/api/docs/
-      - static_value:/app/static/
-      - media_value:/app/media/
+      - ../docs/redoc.html:/usr/share/nginx/html/api/docs/redoc.html
+      - ../docs/openapi-schema.yml:/usr/share/nginx/html/api/docs/openapi-schema.yml
+      - static_value:/var/html/static/django
+      - media_value:/var/html/media/django
+    depends_on:
+      - frontend
 volumes:
   postgresql_value:
   static_value:

@@ -9,7 +9,7 @@ from recipes.models import Ingredient
 
 
 class Command(BaseCommand):
-    """Downloads csv-data to database."""
+    """Загружает csv-данные в базу."""
 
     def handle(self, *args, **kwargs):
         call_command('migrate')

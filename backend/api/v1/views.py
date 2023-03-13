@@ -49,8 +49,8 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    """Performs all operations with recipes.
-    Handles all requests for the api/v1/recipes/ endpoint."""
+    """Выполняет все операции с зецептами.
+    Обрабатывает все запросы для эндпоинта api/v1/recipes/."""
 
     queryset = Recipe.objects.all()
     http_method_names = ('get', 'post', 'patch', 'delete',)
@@ -61,14 +61,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         """Sets permissions."""
-        if self.action in {'partial_update', 'destroy'}:
+        if self.action == 'create':
+            self.permission_classes = (IsAuthenticated,)
+        elif self.action in {'partial_update', 'destroy'}:
             self.permission_classes = (IsAuthorOrReadOnly,)
         elif self.action in {'list', 'retrieve'}:
             self.permission_classes = (AllowAny,)
         return super().get_permissions()
 
     def get_serializer_class(self):
-        """Defines the serializer."""
+        """Определяет сериализатор."""
         if self.action in {'create', 'partial_update'}:
             return recipes.RecipeWriteSerializer
         return recipes.RecipeReadSerializer
@@ -96,7 +98,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
 
     def perform_create(self, serializer):
-        """Saves a new instance of the author."""
+        """Сохраняет новое значение для автора."""
         serializer.save(author=self.request.user)
 
     @staticmethod
@@ -130,9 +132,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['POST', ])
     def shopping_cart(self, request, pk):
-        """Adds and deletes recipes to shopping cart.
-        Handles 'POST' and 'DELETE' requests
-        for the api/v1/recipes/{id}/shopping cart endpoint."""
+        """Добавляет рецепты в список покупок.
+        Обрабатывает 'POST' запросы для эндпоинта
+        api/v1/recipes/{id}/shopping cart."""
         serializer = shopping_cart.ShoppingCartSerializer(
             data={'recipe': pk, },
             context={'request': request}
@@ -143,9 +145,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, pk):
-        """Удаляет рецепт из избранного.
+        """Удаляет рецепт из списка покупок.
         Обрабатывает 'DELETE' запросы для эндпоинта
-        api/v1/recipes/{id}/favorites."""
+        api/v1/recipes/{id}/shopping cart."""
         return self.delete_method(request=request, pk=pk, model=ShoppingCart)
 
     @action(
@@ -155,9 +157,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def download_shopping_cart(self, request):
-        """Creates a shopping cart from favorite recipes.
-        Handles 'GET' request for the
-        api/v1/recipes/download_shopping_cart endpoint."""
+        """Создает список покупок для скачивания.
+        Обрабатывает 'GET' запросы для эндпоинта
+        api/v1/recipes/download_shopping_cart."""
         user = self.request.user
         necessary_products = RecipeIngredient.objects.filter(
             recipe__shoppingcart__user=user).values(
@@ -180,8 +182,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
-    """Performs all operations with tags.
-    Handles all requests for the api/v1/tags/ endpoint."""
+    """Выполняет все операции с тэгами.
+    Обрабатывает запросы для эндпоинта the api/v1/tags/."""
 
     queryset = Tag.objects.all()
     serializer_class = tags.TagSerializer
@@ -189,8 +191,9 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class UserSubscriptionViewSet(UserViewSet):
-    """Performs all operations with follows.
-    Handles all requests for the api/v1/users/sudscriptions endpoint."""
+    """Выполняет все операции с пользователями.
+    Обрабатывает все запросы для эндпоинта
+    api/v1/users/sudscriptions."""
 
     queryset = User.objects.all()
     serializer_class = users.UserSerializer
@@ -202,9 +205,9 @@ class UserSubscriptionViewSet(UserViewSet):
         permission_classes=(IsAuthenticated,),
     )
     def subscriptions(self, request):
-        """Shows user's subscriptions.
-        Handles 'GET' request for
-        the api/v1/users/subscribtions endpoint."""
+        """Возвращает список подписок пользователя.
+        Обрабатывает 'GET' запросы для эндпоинта
+        api/v1/users/subscribtions."""
         queryset = Subscription.objects.filter(user=request.user)
         pages = self.paginate_queryset(queryset)
         serializer = subscribtions.FollowSerializer(pages, many=True)
@@ -216,9 +219,9 @@ class UserSubscriptionViewSet(UserViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def subscribe(self, request, **kwargs):
-        """Create user's subscriptions.
-        Handles 'POST', 'DELETE' requests for
-        the api/v1/users/{id}/subscribe endpoint."""
+        """Создает подписку на пользователя.
+        Обрабатывает 'POST' запросы для
+        эндпоинта api/v1/users/{id}/subscribe."""
         serializer = subscribtions.FollowSerializer(
                 data={'author': self.kwargs['id'], },
                 context={'request': request}
