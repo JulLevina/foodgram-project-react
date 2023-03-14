@@ -125,7 +125,7 @@ DJOSER = {
     'HIDE_USERS': False,
     'PERMISSIONS': {
 
-        'user_list': ['rest_framework.permissions.IsAuthenticated'],
+        'user_list': ['rest_framework.permissions.AllowAny'],
 
     },
 

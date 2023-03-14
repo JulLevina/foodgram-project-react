@@ -23,7 +23,7 @@ class RecipeFilter(django_filters.FilterSet):
 
     tags = django_filters.AllValuesMultipleFilter(
         field_name='tags__slug',
-        lookup_expr='in'  # exact
+        lookup_expr='in'
     )
     author = django_filters.CharFilter(
         field_name='author__id',

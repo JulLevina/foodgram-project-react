@@ -60,7 +60,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
 
     def get_permissions(self):
-        """Sets permissions."""
+        """Устанавливает разрешения."""
         if self.action == 'create':
             self.permission_classes = (IsAuthenticated,)
         elif self.action in {'partial_update', 'destroy'}:
@@ -197,7 +197,16 @@ class UserSubscriptionViewSet(UserViewSet):
 
     queryset = User.objects.all()
     serializer_class = users.UserSerializer
-    permission_classes = (IsAuthorOrReadOnly,)
+
+    def get_permissions(self):
+        """Устанавливает разрешения."""
+        if self.action in {'create', 'retrieve'}:
+            self.permission_classes = (IsAuthenticated,)
+        elif self.action == 'destroy':
+            self.permission_classes = (IsAuthorOrReadOnly,)
+        elif self.action == 'list':
+            self.permission_classes = (AllowAny,)
+        return super().get_permissions()
 
     @action(
         detail=False,
