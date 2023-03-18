@@ -1,19 +1,14 @@
+from rest_framework.filters import SearchFilter
 import django_filters
 from django_filters.widgets import BooleanWidget
 
 from recipes.models import Ingredient, Recipe
 
 
-class IngredientFilter(django_filters.FilterSet):
+class IngredientFilter(SearchFilter):
     """Фильтрация списка ингредиентов по названию."""
 
-    name = django_filters.CharFilter(
-        field_name='name', lookup_expr='startswith'
-    )
-
-    class Meta:
-        model = Ingredient
-        fields = ['name']
+    search_param = 'name'
 
 
 class RecipeFilter(django_filters.FilterSet):
@@ -25,16 +20,8 @@ class RecipeFilter(django_filters.FilterSet):
         field_name='tags__slug',
         lookup_expr='in'
     )
-    author = django_filters.CharFilter(
-        field_name='author__id',
-        lookup_expr='icontains'
-        )
-    is_favorited = django_filters.BooleanFilter(
-        widget=BooleanWidget,
-    )
-    is_in_shopping_cart = django_filters.BooleanFilter(
-        widget=BooleanWidget,
-        )
+    is_favorited = django_filters.BooleanFilter(widget=BooleanWidget,)
+    is_in_shopping_cart = django_filters.BooleanFilter(widget=BooleanWidget,)
 
     class Meta:
         model = Recipe

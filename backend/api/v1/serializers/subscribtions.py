@@ -34,10 +34,8 @@ class FollowSerializer(serializers.ModelSerializer):
         'get_is_subscribed',
         read_only=True
     )
-    recipes_count = serializers.SerializerMethodField(
-        'get_recipes_count',
-        read_only=True
-    )
+    recipes_count = serializers.IntegerField(read_only=True)
+  
     recipes = serializers.SerializerMethodField('get_recipes', read_only=True)
 
     class Meta:
@@ -59,10 +57,6 @@ class FollowSerializer(serializers.ModelSerializer):
             user=obj.user,
             author=obj.author
         ).exists()
-
-    def get_recipes_count(self, obj):
-        """Вычисляет общее количество рецептов автора."""
-        return Recipe.objects.filter(author=obj.author).count()
 
     def get_recipes(self, obj):
         """Возвращает все рецепты данного автора."""
@@ -92,6 +86,4 @@ class FollowSerializer(serializers.ModelSerializer):
         data['author_id'] = author_id
         data['user'] = user
         return data
-
-    def create(self, validated_data):
-        return Subscription.objects.create(**validated_data)
+    

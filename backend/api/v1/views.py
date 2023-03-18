@@ -1,15 +1,13 @@
 import io
-from django.db.models import Exists, OuterRef, Sum, Value
+
+from django.db.models import Count, Exists, OuterRef, Sum, Value
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.permissions import (
-    AllowAny,
-    IsAuthenticated
-)
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from recipes.models import (
@@ -31,10 +29,7 @@ from api.v1.serializers import (
     tags,
     users
 )
-from api.v1.filters import (
-    IngredientFilter,
-    RecipeFilter
-    )
+from api.v1.filters import IngredientFilter, RecipeFilter
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -61,11 +56,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         """Устанавливает разрешения."""
-        if self.action == 'create':
+        # self.permission_classes = {
+        #     {'create', 'retrieve'}: IsAuthenticated,
+        #     {'partial_update', 'destroy'}: IsAuthorOrReadOnly,
+        #     'list': AllowAny,
+        # }
+        # return super().get_permissions()
+        if self.action in {'create', 'retrieve'}:
             self.permission_classes = (IsAuthenticated,)
         elif self.action in {'partial_update', 'destroy'}:
-            self.permission_classes = (IsAuthorOrReadOnly,)
-        elif self.action in {'list', 'retrieve'}:
+            self.permission_classes = (IsAuthorOrReadOnly)
+        elif self.action == 'list':
             self.permission_classes = (AllowAny,)
         return super().get_permissions()
 
@@ -77,25 +78,27 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Возвращает список рецептов."""
-        user = self.request.user
-        if user is user.is_anonymous:
-            return Recipe.objects.annotate(
-                is_favorited=Value(False),
-                is_in_shopping_cart=Value(False)
-                ).select_related('author').prefetch_related(
-                'recipes', 'tags', 'ingredients', 'favorites'
-            )
-        else:
-            return Recipe.objects.annotate(
-                is_favorited=Exists(Favorite.objects.filter(
+        user_id = self.request.user.id or None
+        return Recipe.objects.annotate(
+            is_favorited=Value(False),
+            is_in_shopping_cart=Value(False)
+            ).select_related('author').prefetch_related(
+            'recipes', 'tags', 'ingredients', 'favorites'
+        ).annotate(
+            is_favorited=Exists(
+                Favorite.objects.filter(
                     recipe_id=OuterRef('id'),
-                    user=user.id
-                )), is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
+                    user=user_id
+                )
+            ),
+            is_in_shopping_cart=Exists(
+                ShoppingCart.objects.filter(
                     recipe=OuterRef('id'),
-                    user=user.id
-                ))).select_related('author').prefetch_related(
-                    'recipes', 'tags', 'ingredients', 'favorites'
-            )
+                    user=user_id
+                )
+            )).select_related('author').prefetch_related(
+                'recipes', 'tags', 'ingredients', 'favorites'
+        )
 
     def perform_create(self, serializer):
         """Сохраняет новое значение для автора."""
@@ -103,25 +106,29 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def delete_method(model, request, pk):
+        user_id = request.user.id or None
         get_object_or_404(
             model,
             recipe_id=pk,
-            user=request.user
+            user=user_id
         ).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @staticmethod
+    def creating_favorites_or_cart(serializer):
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['POST', ])
     def favorite(self, request, pk):
         """Добавляет рецепты в избранное.
         Обрабатывает 'POST' запросы для эндпоинта
         api/v1/recipes/{id}/favorites."""
-        serializer = favorites.FavoriteSerializer(
-            data={'recipe': pk, },
+        return self.creating_favorites_or_cart(favorites.FavoriteSerializer(
+            data={'recipe': pk, 'user': self.request.user.id},
             context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        ))
 
     @favorite.mapping.delete
     def delete_favorite(self, request, pk):
@@ -130,18 +137,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
         api/v1/recipes/{id}/favorites."""
         return self.delete_method(request=request, pk=pk, model=Favorite)
 
-    @action(detail=True, methods=['POST', ])
+    @action(
+        detail=True,
+        methods=['POST', ],
+        permission_classes=(IsAuthenticated,)
+    )
     def shopping_cart(self, request, pk):
         """Добавляет рецепты в список покупок.
         Обрабатывает 'POST' запросы для эндпоинта
         api/v1/recipes/{id}/shopping cart."""
-        serializer = shopping_cart.ShoppingCartSerializer(
-            data={'recipe': pk, },
-            context={'request': request}
+        return self.creating_favorites_or_cart(
+            shopping_cart.ShoppingCartSerializer(
+                data={'recipe': pk, },
+                context={'request': request}
+            )
         )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, pk):
@@ -152,8 +162,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=False,
-        methods=['GET'],
-        url_path='download_shopping_cart',
         permission_classes=(IsAuthenticated,)
     )
     def download_shopping_cart(self, request):
@@ -165,7 +173,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe__shoppingcart__user=user).values(
                 'ingredient__measurement_unit',
                 'ingredient__name'
-                ).annotate(total=Sum('amount')).order_by('recipe')
+                ).annotate(total=Sum('amount')).order_by('recipe').order_by('ingredient__name')
         content = '\n'.join([
             f'{ingredient["ingredient__name"].capitalize()}: '
             f'{ingredient["total"]} '
@@ -188,6 +196,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = tags.TagSerializer
     pagination_class = None
+    permission_classes = AllowAny
 
 
 class UserSubscriptionViewSet(UserViewSet):
@@ -196,17 +205,31 @@ class UserSubscriptionViewSet(UserViewSet):
     api/v1/users/sudscriptions."""
 
     queryset = User.objects.all()
-    serializer_class = users.UserSerializer
+    #serializer_class = users.UserSerializer
+    http_method_names = ('get', 'post', 'delete')
 
     def get_permissions(self):
         """Устанавливает разрешения."""
-        if self.action in {'create', 'retrieve'}:
-            self.permission_classes = (IsAuthenticated,)
-        elif self.action == 'destroy':
-            self.permission_classes = (IsAuthorOrReadOnly,)
-        elif self.action == 'list':
+        if self.action in {'create', 'list'}:
             self.permission_classes = (AllowAny,)
+        elif self.action == 'retrieve':
+            self.permission_classes = (IsAuthenticated,)
         return super().get_permissions()
+
+    def get_serializer_class(self):
+        """Определяет сериализатор."""
+        if self.action in {'subscriptions', 'subscribe', 'destroy'}:
+            return subscribtions.FollowSerializer
+        return users.UserSerializer
+
+    # def get_queryset(self):
+    #     if self.action in {'subscriptions', 'subscribe'}:
+    #         return Subscription.objects.filter(
+    #             user=self.request.user
+    #                 ).annotate(
+    #                     recipes_count=Count('author__recipe_set'),
+    #         )
+    #     return User.objects.all()
 
     @action(
         detail=False,
@@ -217,10 +240,14 @@ class UserSubscriptionViewSet(UserViewSet):
         """Возвращает список подписок пользователя.
         Обрабатывает 'GET' запросы для эндпоинта
         api/v1/users/subscribtions."""
-        queryset = Subscription.objects.filter(user=request.user)
-        pages = self.paginate_queryset(queryset)
-        serializer = subscribtions.FollowSerializer(pages, many=True)
-        return self.get_paginated_response(serializer.data)
+        queryset = Subscription.objects.filter(user=request.user).annotate(
+            recipes_count=Count('author__recipe_set'),)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(
         methods=['POST', ],

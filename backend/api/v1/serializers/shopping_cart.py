@@ -16,7 +16,7 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
             'recipe',
         )
 
-    def validate(self, data):
+    def validate(self, data):  # валидация через UniqueTogetherValidator
         if self.context['request'].method != 'POST':
             return data
         recipe_id = self.context['request'].parser_context['kwargs']['pk']
@@ -35,9 +35,6 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
         data['recipe_id'] = recipe_id
         data['user'] = user
         return data
-
-    def create(self, validated_data):
-        return ShoppingCart.objects.create(**validated_data)
 
     def to_representation(self, instance):
         """Преобразует информацию о рецепте в список полей."""

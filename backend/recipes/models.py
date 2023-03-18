@@ -16,6 +16,7 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        related_name='recipe_set',
         verbose_name='Автор'
     )
     ingredients = models.ManyToManyField(
