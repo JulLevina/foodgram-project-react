@@ -5,7 +5,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
-from rest_framework import viewsets, status
+from rest_framework import filters, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -29,7 +29,7 @@ from api.v1.serializers import (
     tags,
     users
 )
-from api.v1.filters import IngredientFilter, RecipeFilter
+from api.v1.filters import RecipeFilter
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -37,10 +37,10 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     Обрабатывает все запросы для эндпоинта api/v1/ingreients/."""
 
     queryset = Ingredient.objects.order_by('name')
-    filter_backends = (DjangoFilterBackend,)
-    filterset_class = IngredientFilter
     serializer_class = ingredients.IngredientReadSerializer
     pagination_class = None
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('^name',)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -65,14 +65,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.action in {'create', 'retrieve'}:
             self.permission_classes = (IsAuthenticated,)
         elif self.action in {'partial_update', 'destroy'}:
-            self.permission_classes = (IsAuthorOrReadOnly)
+            self.permission_classes = (IsAuthorOrReadOnly,)
         elif self.action == 'list':
             self.permission_classes = (AllowAny,)
         return super().get_permissions()
 
     def get_serializer_class(self):
         """Определяет сериализатор."""
-        if self.action in {'create', 'partial_update'}:
+        if self.action in {'create', 'partial_update', 'destroy'}:
             return recipes.RecipeWriteSerializer
         return recipes.RecipeReadSerializer
 
@@ -196,7 +196,6 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = tags.TagSerializer
     pagination_class = None
-    permission_classes = AllowAny
 
 
 class UserSubscriptionViewSet(UserViewSet):
@@ -222,14 +221,14 @@ class UserSubscriptionViewSet(UserViewSet):
             return subscribtions.FollowSerializer
         return users.UserSerializer
 
-    # def get_queryset(self):
-    #     if self.action in {'subscriptions', 'subscribe'}:
-    #         return Subscription.objects.filter(
-    #             user=self.request.user
-    #                 ).annotate(
-    #                     recipes_count=Count('author__recipe_set'),
-    #         )
-    #     return User.objects.all()
+    #def get_queryset(self):
+        #if self.action in {'subscriptions', 'subscribe'}:
+            #return Subscription.objects.filter(
+                #user=self.request.user
+                    #).annotate(
+                        #recipes_count=Count('author__recipe_set'),
+             #)
+        #return User.objects.all()
 
     @action(
         detail=False,

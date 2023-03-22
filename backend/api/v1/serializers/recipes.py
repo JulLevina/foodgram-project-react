@@ -25,8 +25,8 @@ class Base64ImageField(serializers.ImageField):
             data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
         return super().to_internal_value(data)
 
-    # def to_representation(self, value):
-    #     return value.url
+    #def to_representation(self, value):
+        #return value.url
 
 
 class RecipeReadSerializer(serializers.ModelSerializer):
@@ -35,6 +35,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     Recipe для эндпоинта api/v1/recipes/.
     """
 
+    image = Base64ImageField()
     tags = TagSerializer(read_only=True, many=True)
     ingredients = IngredientWriteSerializer(many=True, source='recipes')
     author = UserSerializer(read_only=True)
@@ -85,7 +86,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True
     )
-    image = Base64ImageField()#use_url=True, required=True, allow_null=False)
+    image = Base64ImageField(required=False, allow_null=True) #use_url=True, required=True, allow_null=False)
     ingredients = RecipeIngredientSerializer(many=True, allow_null=False)
 
     class Meta:
@@ -108,7 +109,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                 'Создание рецепта без ингредиентов невозможно!'
                 )
         for ingredient in ingredients:
-            if not (int(ingredient.get('amount')) > 1):
+            if not (int(ingredient.get('amount')) >= 1):
                 raise serializers.ValidationError(
                     'Количнество ингредиентов должно быть больше 0!'
                     )

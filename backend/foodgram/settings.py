@@ -60,14 +60,12 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 
 DATABASES = {
     'default': {
-        # 'ENGINE': os.getenv('DB_ENGINE', default='django.db.backends.postgresql'),
-        # 'NAME': os.getenv('DB_NAME', default='postgres'),
-        # 'USER': os.getenv('POSTGRES_USER', default='Admin'),
-        # 'PASSWORD': os.getenv('POSTGRES_PASSWORD', default='Admin_user'),
-        # 'HOST': os.getenv('DB_HOST', default='db'),
-        # 'PORT': os.getenv('DB_PORT', default=5432)
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3')
+        'ENGINE': os.getenv('DB_ENGINE', default='django.db.backends.postgresql'),
+        'NAME': os.getenv('DB_NAME', default='postgres'),
+        'USER': os.getenv('POSTGRES_USER', default='Admin'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', default='Admin_user'),
+        'HOST': os.getenv('DB_HOST', default='db'),
+        'PORT': os.getenv('DB_PORT', default=5432),
     }
 }
 
@@ -119,6 +117,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'api.v1.pagination.FoodgramPagination',
     'PAGE_SIZE': 6,
 
+    'SEARCH_PARAM': 'name'
+
 }
 
 DJOSER = {
@@ -127,6 +127,14 @@ DJOSER = {
 
         'user': ['rest_framework.permissions.IsAuthenticated'],
         'user_list': ['rest_framework.permissions.AllowAny'],
+        'activation': ['rest_framework.permissions.IsAdminUser'],
+        'password_reset': ['rest_framework.permissions.IsAdminUser'],
+        'password_reset_confirm': ['rest_framework.permissions.IsAdminUser'],
+        'username_reset': ['rest_framework.permissions.IsAdminUser'],
+        'username_reset_confirm': ['rest_framework.permissions.IsAdminUser'],
+        'set_username': ['rest_framework.permissions.IsAdminUser'],
+        'user_delete': ['rest_framework.permissions.IsAdminUser'],
+        #'token_destroy': ['rest_framework.permissions.IsAdminUser'],
 
     },
 
@@ -136,4 +144,5 @@ DJOSER = {
         "current_user": "api.v1.serializers.users.UserSerializer",
         "user_delete": "djoser.serializers.UserSerializer",
     },
+
 }
