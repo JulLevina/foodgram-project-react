@@ -56,12 +56,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         """Устанавливает разрешения."""
-        # self.permission_classes = {
-        #     {'create', 'retrieve'}: IsAuthenticated,
-        #     {'partial_update', 'destroy'}: IsAuthorOrReadOnly,
-        #     'list': AllowAny,
-        # }
-        # return super().get_permissions()
         if self.action in {'create', 'retrieve'}:
             self.permission_classes = (IsAuthenticated,)
         elif self.action in {'partial_update', 'destroy'}:
@@ -126,7 +120,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         Обрабатывает 'POST' запросы для эндпоинта
         api/v1/recipes/{id}/favorites."""
         return self.creating_favorites_or_cart(favorites.FavoriteSerializer(
-            data={'recipe': pk, 'user': self.request.user.id},
+            data={'recipe': pk},
             context={'request': request}
         ))
 
@@ -148,7 +142,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         api/v1/recipes/{id}/shopping cart."""
         return self.creating_favorites_or_cart(
             shopping_cart.ShoppingCartSerializer(
-                data={'recipe': pk, },
+                data={'recipe': pk},
                 context={'request': request}
             )
         )
@@ -173,7 +167,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe__shoppingcart__user=user).values(
                 'ingredient__measurement_unit',
                 'ingredient__name'
-                ).annotate(total=Sum('amount')).order_by('recipe').order_by('ingredient__name')
+                ).annotate(
+                    total=Sum('amount')
+                ).order_by('recipe').order_by('ingredient__name')
         content = '\n'.join([
             f'{ingredient["ingredient__name"].capitalize()}: '
             f'{ingredient["total"]} '
@@ -204,7 +200,6 @@ class UserSubscriptionViewSet(UserViewSet):
     api/v1/users/sudscriptions."""
 
     queryset = User.objects.all()
-    #serializer_class = users.UserSerializer
     http_method_names = ('get', 'post', 'delete')
 
     def get_permissions(self):
@@ -221,14 +216,13 @@ class UserSubscriptionViewSet(UserViewSet):
             return subscribtions.FollowSerializer
         return users.UserSerializer
 
-    #def get_queryset(self):
-        #if self.action in {'subscriptions', 'subscribe'}:
-            #return Subscription.objects.filter(
-                #user=self.request.user
-                    #).annotate(
-                        #recipes_count=Count('author__recipe_set'),
-             #)
-        #return User.objects.all()
+    def get_queryset(self):
+        if self.action in {'subscriptions', 'subscribe'}:
+            return Subscription.objects.filter(
+                user=self.request.user
+                    ).annotate(
+                        recipes_count=Count('author__recipe_set'),)
+        return User.objects.all()
 
     @action(
         detail=False,
@@ -239,8 +233,9 @@ class UserSubscriptionViewSet(UserViewSet):
         """Возвращает список подписок пользователя.
         Обрабатывает 'GET' запросы для эндпоинта
         api/v1/users/subscribtions."""
-        queryset = Subscription.objects.filter(user=request.user).annotate(
-            recipes_count=Count('author__recipe_set'),)
+        queryset = self.get_queryset()
+        # Subscription.objects.filter(user=request.user).annotate(
+        #     recipes_count=Count('author__recipe_set'),)
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -258,7 +253,7 @@ class UserSubscriptionViewSet(UserViewSet):
         Обрабатывает 'POST' запросы для
         эндпоинта api/v1/users/{id}/subscribe."""
         serializer = subscribtions.FollowSerializer(
-                data={'author': self.kwargs['id'], },
+                data={'author': self.kwargs['id']},
                 context={'request': request}
             )
         serializer.is_valid(raise_exception=True)

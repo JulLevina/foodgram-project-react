@@ -66,6 +66,8 @@ DATABASES = {
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', default='Admin_user'),
         'HOST': os.getenv('DB_HOST', default='db'),
         'PORT': os.getenv('DB_PORT', default=5432),
+        # 'ENGINE': 'django.db.backends.sqlite3',
+        # 'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
@@ -134,7 +136,6 @@ DJOSER = {
         'username_reset_confirm': ['rest_framework.permissions.IsAdminUser'],
         'set_username': ['rest_framework.permissions.IsAdminUser'],
         'user_delete': ['rest_framework.permissions.IsAdminUser'],
-        #'token_destroy': ['rest_framework.permissions.IsAdminUser'],
 
     },
 

@@ -4,10 +4,8 @@ from django.core.files.base import ContentFile
 from rest_framework import serializers
 
 from recipes.models import (
-    Favorite,
     Recipe,
     RecipeIngredient,
-    ShoppingCart,
     Tag
 )
 from .tags import TagSerializer
@@ -25,8 +23,8 @@ class Base64ImageField(serializers.ImageField):
             data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
         return super().to_internal_value(data)
 
-    #def to_representation(self, value):
-        #return value.url
+    # def to_representation(self, value):
+        # return value.url
 
 
 class RecipeReadSerializer(serializers.ModelSerializer):
@@ -57,24 +55,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             'cooking_time'
         )
 
-    # def get_is_favorited(self, obj) -> bool:
-    #     """Определяет, добавлен ли рецепт в избранное."""
-    #     user = self.context.get('request').user
-    #     if user.is_anonymous:
-    #         return False
-    #     return Favorite.objects.filter(
-    #         user=user, recipe=obj).exists()
-
-    # def get_is_in_shopping_cart(self, obj) -> bool:
-    #     """Определяет, добавлен ли рецепт в список покупок."""
-    #     user = self.context.get('request').user
-    #     if user.is_anonymous:
-    #         return False
-    #     return ShoppingCart.objects.filter(
-    #         user=user,
-    #         recipe=obj
-    #     ).exists()
-
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
     """Только для записи.
@@ -86,7 +66,8 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True
     )
-    image = Base64ImageField(required=False, allow_null=True) #use_url=True, required=True, allow_null=False)
+    image = Base64ImageField(required=False, allow_null=True)
+    # use_url=True, required=True, allow_null=False)
     ingredients = RecipeIngredientSerializer(many=True, allow_null=False)
 
     class Meta:

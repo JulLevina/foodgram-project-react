@@ -35,7 +35,7 @@ class FollowSerializer(serializers.ModelSerializer):
         read_only=True
     )
     recipes_count = serializers.IntegerField(read_only=True)
-  
+
     recipes = serializers.SerializerMethodField('get_recipes', read_only=True)
 
     class Meta:
@@ -86,4 +86,3 @@ class FollowSerializer(serializers.ModelSerializer):
         data['author_id'] = author_id
         data['user'] = user
         return data
-    

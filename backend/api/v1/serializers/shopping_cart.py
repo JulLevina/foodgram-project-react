@@ -16,7 +16,7 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
             'recipe',
         )
 
-    def validate(self, data):  # валидация через UniqueTogetherValidator
+    def validate(self, data):
         if self.context['request'].method != 'POST':
             return data
         recipe_id = self.context['request'].parser_context['kwargs']['pk']
