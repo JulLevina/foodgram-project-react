@@ -23,9 +23,6 @@ class Base64ImageField(serializers.ImageField):
             data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
         return super().to_internal_value(data)
 
-    # def to_representation(self, value):
-        # return value.url
-
 
 class RecipeReadSerializer(serializers.ModelSerializer):
     """Только для чтения.
@@ -66,8 +63,12 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True
     )
-    image = Base64ImageField(required=False, allow_null=True)
-    # use_url=True, required=True, allow_null=False)
+    image = Base64ImageField(
+        max_length=None,
+        use_url=True,
+        required=True,
+        allow_null=False
+    )
     ingredients = RecipeIngredientSerializer(many=True, allow_null=False)
 
     class Meta:
@@ -88,19 +89,19 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         if not ingredients:
             raise serializers.ValidationError(
                 'Создание рецепта без ингредиентов невозможно!'
-                )
+            )
         for ingredient in ingredients:
             if not (int(ingredient.get('amount')) >= 1):
                 raise serializers.ValidationError(
                     'Количнество ингредиентов должно быть больше 0!'
-                    )
+                )
             sorted_ingredients = []
             for key in ingredient:
                 sorted_ingredients.append(key)
                 if len(sorted_ingredients) != len(set(sorted_ingredients)):
                     raise serializers.ValidationError(
                         'Ингредиенты не должны повторяться!'
-                        )
+                    )
         return ingredients
 
     @transaction.atomic

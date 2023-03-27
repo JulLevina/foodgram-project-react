@@ -1,5 +1,6 @@
 from rest_framework.routers import DefaultRouter
 from django.urls import path, include
+from djoser.views import UserViewSet
 
 from .views import (
     IngredientViewSet,
@@ -16,6 +17,10 @@ v1_router.register('tags', TagViewSet, basename='tags')
 v1_router.register('users', UserSubscriptionViewSet, basename='users')
 
 urlpatterns = [
+    path('users/set_password/', UserViewSet.as_view(
+        {'post': 'set_password'}
+    ), name='set_password'),
+    path('users/me/', UserViewSet.as_view({'get': 'me'}), name='me'),
     path('', include(v1_router.urls)),
-    path('auth/', include('djoser.urls.authtoken')),
+    path('auth/', include('djoser.urls.authtoken'))
 ]

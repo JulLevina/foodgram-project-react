@@ -16,7 +16,7 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='recipe_set',
+        related_name='recipes',
         verbose_name='Автор'
     )
     ingredients = models.ManyToManyField(
@@ -27,7 +27,7 @@ class Recipe(models.Model):
     name = models.CharField(
         max_length=200,
         verbose_name='Название рецепта'
-        )
+    )
     image = models.ImageField(
         upload_to='recipes/images/',
         verbose_name='Картинка'
@@ -41,7 +41,7 @@ class Recipe(models.Model):
             )
         ],
         verbose_name='Время приготовления'
-        )
+    )
     pub_date = models.DateTimeField(
         auto_now_add=True,
         db_index=True,

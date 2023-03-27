@@ -7,15 +7,11 @@ class FavoriteRecipeSerializer(serializers.ModelSerializer):
     """
     Возвращает JSON-данные, необходимые для добавления рецепта в избранное.
     """
-    # image = serializers.SerializerMethodField('get_image')  # новое
 
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
         read_only_fields = ['name', 'image', 'cooking_time']
-
-    # def get_image(self, obj):  # новое
-        # self.context['request'].build_absolute_uri(obj.image.url)
 
 
 class FavoriteSerializer(serializers.ModelSerializer):

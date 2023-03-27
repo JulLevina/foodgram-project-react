@@ -1,5 +1,5 @@
 # __Foodgram project (v1)__
-![API_yamdb workflow](https://github.com/JulLevina/yamdb_final/actions/workflows/yamdb_workflow.yml/badge.svg)
+![Foodgram workflow](https://github.com/JulLevina/test_foodgram/actions/workflows/foodgram_workflow.yml/badge.svg)
 
 ## _Описание_
 
@@ -41,7 +41,7 @@ sudo docker-compose exec web python manage.py collectstatic --no-input
 
 #### _Проект доступен по адресу:_
 
-http://jullevina.ddns.net/foodgram/
+http://158.160.56.235
 
 #### _Примеры запросов к API
 

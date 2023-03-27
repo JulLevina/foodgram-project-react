@@ -4,7 +4,6 @@ from django.db.models import Count, Exists, OuterRef, Sum, Value
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from djoser.views import UserViewSet
 from rest_framework import filters, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -76,7 +75,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Recipe.objects.annotate(
             is_favorited=Value(False),
             is_in_shopping_cart=Value(False)
-            ).select_related('author').prefetch_related(
+        ).select_related('author').prefetch_related(
             'recipes', 'tags', 'ingredients', 'favorites'
         ).annotate(
             is_favorited=Exists(
@@ -166,10 +165,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         necessary_products = RecipeIngredient.objects.filter(
             recipe__shoppingcart__user=user).values(
                 'ingredient__measurement_unit',
-                'ingredient__name'
-                ).annotate(
+                'ingredient__name').annotate(
                     total=Sum('amount')
-                ).order_by('recipe').order_by('ingredient__name')
+        ).order_by('recipe').order_by('ingredient__name')
         content = '\n'.join([
             f'{ingredient["ingredient__name"].capitalize()}: '
             f'{ingredient["total"]} '
@@ -194,10 +192,10 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
-class UserSubscriptionViewSet(UserViewSet):
+class UserSubscriptionViewSet(viewsets.ModelViewSet):
     """Выполняет все операции с пользователями.
     Обрабатывает все запросы для эндпоинта
-    api/v1/users/sudscriptions."""
+    api/v1/users/subscriptions."""
 
     queryset = User.objects.all()
     http_method_names = ('get', 'post', 'delete')
@@ -212,16 +210,20 @@ class UserSubscriptionViewSet(UserViewSet):
 
     def get_serializer_class(self):
         """Определяет сериализатор."""
-        if self.action in {'subscriptions', 'subscribe', 'destroy'}:
+        if self.action in {'subscriptions', 'destroy'}:
             return subscribtions.FollowSerializer
+        if self.action == 'subscribe':
+            return subscribtions.SubscribeSerializer
+        if self.action == 'create':
+            return users.UserCreateSerializer
         return users.UserSerializer
 
     def get_queryset(self):
         if self.action in {'subscriptions', 'subscribe'}:
             return Subscription.objects.filter(
                 user=self.request.user
-                    ).annotate(
-                        recipes_count=Count('author__recipe_set'),)
+            ).annotate(
+                recipes_count=Count('author__recipes'),)
         return User.objects.all()
 
     @action(
@@ -234,11 +236,13 @@ class UserSubscriptionViewSet(UserViewSet):
         Обрабатывает 'GET' запросы для эндпоинта
         api/v1/users/subscribtions."""
         queryset = self.get_queryset()
-        # Subscription.objects.filter(user=request.user).annotate(
-        #     recipes_count=Count('author__recipe_set'),)
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            serializer = self.get_serializer(
+                page,
+                many=True,
+                context={'request': request}
+            )
             return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
@@ -248,26 +252,26 @@ class UserSubscriptionViewSet(UserViewSet):
         detail=True, url_path='subscribe',
         permission_classes=(IsAuthenticated,)
     )
-    def subscribe(self, request, **kwargs):
+    def subscribe(self, request, pk=None):
         """Создает подписку на пользователя.
         Обрабатывает 'POST' запросы для
         эндпоинта api/v1/users/{id}/subscribe."""
-        serializer = subscribtions.FollowSerializer(
-                data={'author': self.kwargs['id']},
-                context={'request': request}
-            )
+        serializer = self.get_serializer(
+            data={'author': pk},
+            context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
-    def delete_subscribe(self, request, **kwargs):
+    def delete_subscribe(self, request, pk):
         """Удаляет подписку.
         Обрабатывает 'DELETE' запросы для эндпоинта
         api/v1/recipes/{id}/subscriptions."""
         get_object_or_404(
             Subscription,
-            author_id=self.kwargs['id'],
+            author_id=pk,
             user=request.user
         ).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

@@ -4,7 +4,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = os.getenv('SECRET_KEY', default='SUP3R-S3CR3T-K3Y-F0R-MY-PR0J3CT')
 
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -65,9 +65,7 @@ DATABASES = {
         'USER': os.getenv('POSTGRES_USER', default='Admin'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', default='Admin_user'),
         'HOST': os.getenv('DB_HOST', default='db'),
-        'PORT': os.getenv('DB_PORT', default=5432),
-        # 'ENGINE': 'django.db.backends.sqlite3',
-        # 'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'PORT': os.getenv('DB_PORT', default=5432)
     }
 }
 
@@ -100,11 +98,9 @@ STATIC_URL = '/static/django/'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static', 'django')
 
-STATICFILES_DIRS = ['/app/data']
+MEDIA_URL = '/media/'
 
-MEDIA_URL = '/media/django/'
-
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media', 'django')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 REST_FRAMEWORK = {
 
