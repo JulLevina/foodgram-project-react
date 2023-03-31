@@ -17,6 +17,7 @@ class FavoriteRecipeSerializer(serializers.ModelSerializer):
 class FavoriteSerializer(serializers.ModelSerializer):
     """Возвращает JSON-данные всех полей модели
     Favorite для эндпоинта api/v1/users/favorite/."""
+
     recipe = FavoriteRecipeSerializer(read_only=True)
 
     class Meta:

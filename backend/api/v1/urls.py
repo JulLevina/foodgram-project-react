@@ -4,9 +4,9 @@ from djoser.views import UserViewSet
 
 from .views import (
     IngredientViewSet,
-    UserSubscriptionViewSet,
     RecipeViewSet,
     TagViewSet,
+    UserSubscriptionViewSet
 )
 
 v1_router = DefaultRouter()

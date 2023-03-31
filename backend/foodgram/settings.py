@@ -94,9 +94,9 @@ USE_L10N = True
 
 USE_TZ = True
 
-STATIC_URL = '/static/django/'
+STATIC_URL = '/static/'
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'static', 'django')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 MEDIA_URL = '/media/'
 
@@ -106,10 +106,6 @@ REST_FRAMEWORK = {
 
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
-    ],
-
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
     ],
 
     'DEFAULT_PAGINATION_CLASS': 'api.v1.pagination.FoodgramPagination',
@@ -125,21 +121,6 @@ DJOSER = {
 
         'user': ['rest_framework.permissions.IsAuthenticated'],
         'user_list': ['rest_framework.permissions.AllowAny'],
-        'activation': ['rest_framework.permissions.IsAdminUser'],
-        'password_reset': ['rest_framework.permissions.IsAdminUser'],
-        'password_reset_confirm': ['rest_framework.permissions.IsAdminUser'],
-        'username_reset': ['rest_framework.permissions.IsAdminUser'],
-        'username_reset_confirm': ['rest_framework.permissions.IsAdminUser'],
-        'set_username': ['rest_framework.permissions.IsAdminUser'],
-        'user_delete': ['rest_framework.permissions.IsAdminUser'],
-
-    },
-
-    "SERIALIZERS": {
-        "user_create": "api.v1.serializers.users.UserCreateSerializer",
-        "user": "api.v1.serializers.users.UserSerializer",
-        "current_user": "api.v1.serializers.users.UserSerializer",
-        "user_delete": "djoser.serializers.UserSerializer",
     },
 
 }

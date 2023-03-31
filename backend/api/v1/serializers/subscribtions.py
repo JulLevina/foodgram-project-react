@@ -61,8 +61,24 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_recipes(self, obj):
         """Возвращает все рецепты данного автора."""
-        recipes = Recipe.objects.filter(author=obj.author)
-        return FavoriteRecipeSerializer(recipes, many=True).data
+        request = self.context.get('request')
+        recipes_limit = request.GET.get('recipes_limit')
+        recipes = Recipe.objects.filter(
+            author=obj.author
+        )
+        if recipes_limit:
+            try:
+                type(recipes_limit) == int
+                recipes = recipes[:(int(recipes_limit))]
+            except ValueError:
+                return f'Ожидается числовой тип данных: {recipes_limit}'
+        else:
+            recipes = recipes
+        return FavoriteRecipeSerializer(
+            recipes,
+            many=True,
+            context=self.context
+        ).data
 
     def validate(self, data):
         if self.context['request'].method != 'POST':

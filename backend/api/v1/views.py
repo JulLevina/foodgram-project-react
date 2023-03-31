@@ -4,20 +4,13 @@ from django.db.models import Count, Exists, OuterRef, Sum, Value
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from rest_framework import filters, viewsets, status
+from djoser.serializers import SetPasswordSerializer
+from rest_framework import filters, mixins, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from recipes.models import (
-    Ingredient,
-    Favorite,
-    Recipe,
-    RecipeIngredient,
-    ShoppingCart,
-    Tag
-)
-from users.models import Subscription, User
+from api.v1.filters import RecipeFilter
 from api.v1.permissions import IsAuthorOrReadOnly
 from api.v1.serializers import (
     ingredients,
@@ -28,7 +21,15 @@ from api.v1.serializers import (
     tags,
     users
 )
-from api.v1.filters import RecipeFilter
+from recipes.models import (
+    Ingredient,
+    Favorite,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Tag
+)
+from users.models import Subscription, User
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -55,12 +56,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         """Устанавливает разрешения."""
-        if self.action in {'create', 'retrieve'}:
+        if self.action == 'create':
             self.permission_classes = (IsAuthenticated,)
         elif self.action in {'partial_update', 'destroy'}:
             self.permission_classes = (IsAuthorOrReadOnly,)
-        elif self.action == 'list':
-            self.permission_classes = (AllowAny,)
         return super().get_permissions()
 
     def get_serializer_class(self):
@@ -89,9 +88,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     recipe=OuterRef('id'),
                     user=user_id
                 )
-            )).select_related('author').prefetch_related(
-                'recipes', 'tags', 'ingredients', 'favorites'
-        )
+            ))
 
     def perform_create(self, serializer):
         """Сохраняет новое значение для автора."""
@@ -192,39 +189,55 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
-class UserSubscriptionViewSet(viewsets.ModelViewSet):
+class UserSubscriptionViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet
+):
     """Выполняет все операции с пользователями.
     Обрабатывает все запросы для эндпоинта
     api/v1/users/subscriptions."""
 
     queryset = User.objects.all()
-    http_method_names = ('get', 'post', 'delete')
 
     def get_permissions(self):
         """Устанавливает разрешения."""
         if self.action in {'create', 'list'}:
             self.permission_classes = (AllowAny,)
-        elif self.action == 'retrieve':
+        elif self.action in {'retrieve', 'me', 'set_password'}:
             self.permission_classes = (IsAuthenticated,)
         return super().get_permissions()
 
     def get_serializer_class(self):
         """Определяет сериализатор."""
-        if self.action in {'subscriptions', 'destroy'}:
+        if self.action == 'subscriptions':
             return subscribtions.FollowSerializer
         if self.action == 'subscribe':
             return subscribtions.SubscribeSerializer
-        if self.action == 'create':
-            return users.UserCreateSerializer
-        return users.UserSerializer
+        if self.action in {'list', 'retrieve', 'me'}:
+            return users.UserSerializer
+        if self.action == 'set_password':
+            return SetPasswordSerializer
+        return users.UserCreateSerializer
 
     def get_queryset(self):
+        user_id = self.request.user.id or None
         if self.action in {'subscriptions', 'subscribe'}:
             return Subscription.objects.filter(
                 user=self.request.user
             ).annotate(
                 recipes_count=Count('author__recipes'),)
-        return User.objects.all()
+        return User.objects.annotate(
+            is_subscribed=Value(False)
+        ).annotate(
+            is_subscribed=Exists(
+                Subscription.objects.filter(
+                    author_id=OuterRef('id'),
+                    user=user_id
+                )
+            )
+        ).prefetch_related('subscribers', 'authors')
 
     @action(
         detail=False,
@@ -248,7 +261,7 @@ class UserSubscriptionViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(
-        methods=['POST', ],
+        methods=['POST'],
         detail=True, url_path='subscribe',
         permission_classes=(IsAuthenticated,)
     )

@@ -1,5 +1,5 @@
 # __Foodgram project (v1)__
-![Foodgram workflow](https://github.com/JulLevina/test_foodgram/actions/workflows/foodgram_workflow.yml/badge.svg)
+![Foodgram workflow](https://github.com/JulLevina/foodgram-project-react/actions/workflows/foodgram_workflow.yml/badge.svg)
 
 ## _Описание_
 

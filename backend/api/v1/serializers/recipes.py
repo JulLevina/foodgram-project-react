@@ -23,6 +23,9 @@ class Base64ImageField(serializers.ImageField):
             data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
         return super().to_internal_value(data)
 
+    # def to_representation(self, value):
+    #     return value.url
+
 
 class RecipeReadSerializer(serializers.ModelSerializer):
     """Только для чтения.
@@ -66,10 +69,9 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     image = Base64ImageField(
         max_length=None,
         use_url=True,
-        required=True,
-        allow_null=False
+        required=True
     )
-    ingredients = RecipeIngredientSerializer(many=True, allow_null=False)
+    ingredients = RecipeIngredientSerializer(many=True)
 
     class Meta:
         model = Recipe
@@ -83,28 +85,24 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ['author']
 
-    def validate_ingredients(self, ingredients):
+    def validate_ingredients(self, value):
         """Предотвращает создание рецепта без ингредиентов.
         Предотвращает дублирование ингредиентов в рецепте."""
-        if not ingredients:
+        if not value:
             raise serializers.ValidationError(
                 'Создание рецепта без ингредиентов невозможно!'
             )
-        for ingredient in ingredients:
+        for ingredient in value:
             if not (int(ingredient.get('amount')) >= 1):
                 raise serializers.ValidationError(
                     'Количнество ингредиентов должно быть больше 0!'
                 )
             sorted_ingredients = []
             for key in ingredient:
-                sorted_ingredients.append(key)
-                if len(sorted_ingredients) != len(set(sorted_ingredients)):
-                    raise serializers.ValidationError(
-                        'Ингредиенты не должны повторяться!'
-                    )
-        return ingredients
+                if key not in sorted_ingredients:
+                    sorted_ingredients.append(key)
+        return value
 
-    @transaction.atomic
     def ingredients_creating(self, ingredients, recipe, tags):
         """Создает набор полей для добавления ингредиентов в рецепт. """
         recipe.tags.set(tags)
@@ -134,7 +132,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         ingredients = validated_data.pop('ingredients')
         super().update(instance, validated_data)
         self.ingredients_creating(ingredients, instance, tags)
-        instance.save()
         return instance
 
     def to_representation(self, instance):

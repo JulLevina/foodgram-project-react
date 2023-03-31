@@ -4,7 +4,7 @@ from djoser.serializers import (
 )
 from rest_framework import serializers
 
-from users.models import User, Subscription
+from users.models import User
 
 
 class UserCreateSerializer(DjoserUserCreateSerializer):
@@ -26,10 +26,7 @@ class UserCreateSerializer(DjoserUserCreateSerializer):
 class UserSerializer(DjoserUserSerializer):
     """Возвращает данные о подписчиках."""
 
-    is_subscribed = serializers.SerializerMethodField(
-        'get_is_subscribed',
-        read_only=True
-    )
+    is_subscribed = serializers.BooleanField(default=False)
 
     class Meta:
         model = User
@@ -41,10 +38,3 @@ class UserSerializer(DjoserUserSerializer):
             'last_name',
             'is_subscribed'
         )
-
-    def get_is_subscribed(self, obj):
-        """Проверяет наличие у текущего пользователя подписки на автора.."""
-        user = self.context.get('request').user
-        if user.is_anonymous:
-            return False
-        return Subscription.objects.filter(user=user, author=obj).exists()

@@ -1,4 +1,5 @@
 version: '3.3'
+
 services:
 
   db:
@@ -17,7 +18,7 @@ services:
     image: jullevina/foodgram_backend:v1.03.2023
     restart: unless-stopped
     volumes:
-      - static_value:/app/static/django/
+      - static_value:/app/static/
       - media_value:/app/media/
     depends_on:
       db:
