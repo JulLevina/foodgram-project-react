@@ -1,6 +1,6 @@
 import io
 
-from django.db.models import Count, Exists, OuterRef, Sum, Value
+from django.db.models import Count, Exists, OuterRef, Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -66,15 +66,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """Определяет сериализатор."""
         if self.action in {'create', 'partial_update', 'destroy'}:
             return recipes.RecipeWriteSerializer
+        if self.action == 'favorite':
+            return favorites.FavoriteSerializer
+        if self.action == 'shopping_cart':
+            return shopping_cart.ShoppingCartSerializer
         return recipes.RecipeReadSerializer
 
     def get_queryset(self):
         """Возвращает список рецептов."""
         user_id = self.request.user.id or None
-        return Recipe.objects.annotate(
-            is_favorited=Value(False),
-            is_in_shopping_cart=Value(False)
-        ).select_related('author').prefetch_related(
+        return Recipe.objects.select_related('author').prefetch_related(
             'recipes', 'tags', 'ingredients', 'favorites'
         ).annotate(
             is_favorited=Exists(
@@ -105,17 +106,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @staticmethod
-    def creating_favorites_or_cart(serializer):
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    def creating_favorites_or_cart(serializer_class):
+        serializer_class.is_valid(raise_exception=True)
+        serializer_class.save()
+        return Response(serializer_class.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['POST', ])
     def favorite(self, request, pk):
         """Добавляет рецепты в избранное.
         Обрабатывает 'POST' запросы для эндпоинта
         api/v1/recipes/{id}/favorites."""
-        return self.creating_favorites_or_cart(favorites.FavoriteSerializer(
+        return self.creating_favorites_or_cart(self.get_serializer(
             data={'recipe': pk},
             context={'request': request}
         ))
@@ -137,7 +138,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         Обрабатывает 'POST' запросы для эндпоинта
         api/v1/recipes/{id}/shopping cart."""
         return self.creating_favorites_or_cart(
-            shopping_cart.ShoppingCartSerializer(
+            self.get_serializer(
                 data={'recipe': pk},
                 context={'request': request}
             )
@@ -229,8 +230,6 @@ class UserSubscriptionViewSet(
             ).annotate(
                 recipes_count=Count('author__recipes'),)
         return User.objects.annotate(
-            is_subscribed=Value(False)
-        ).annotate(
             is_subscribed=Exists(
                 Subscription.objects.filter(
                     author_id=OuterRef('id'),

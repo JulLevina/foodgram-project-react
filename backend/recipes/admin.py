@@ -12,20 +12,20 @@ from .models import (
 )
 
 
-class RecipeIngredientInline(admin.StackedInline):
+class RecipeIngredientInline(admin.TabularInline):
     """Связывает ингредиенты с рецептами.
     Предотвращает возможность создания рецепта без ингредиентов."""
 
     model = RecipeIngredient
-    min_num = 1
+    extra = 1
 
 
-class RecipeTagInline(admin.StackedInline):
+class RecipeTagInline(admin.TabularInline):
     """Связывает тэги с рецептами.
     Предотвращает возможность создания рецепта без тэгов."""
 
     model = RecipeTag
-    min_num = 1
+    extra = 1
 
 
 @admin.register(Recipe)
@@ -44,8 +44,8 @@ class RecipeAdmin(admin.ModelAdmin):
     )
     search_fields = (
         'name',
-        'author',
-        'tags'
+        'author__email',
+        'tags__name',
     )
     list_filter = (
         'name',
@@ -53,8 +53,8 @@ class RecipeAdmin(admin.ModelAdmin):
         'tags'
     )
     list_per_page = 6
-    filter_horizontal = ['ingredients', 'tags']
-    inlines = [RecipeIngredientInline, RecipeTagInline]
+    filter_horizontal = ('ingredients', 'tags')
+    inlines = (RecipeIngredientInline, RecipeTagInline)
     empty_value_display = '-пусто-'
 
     def favorites_count(self, object):
@@ -93,6 +93,9 @@ class IngredientAdmin(admin.ModelAdmin):
         'name',
         'measurement_unit',
         'pk'
+    )
+    search_fields = (
+        'name',
     )
     list_filter = (
         'name',

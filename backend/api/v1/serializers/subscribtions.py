@@ -66,14 +66,12 @@ class FollowSerializer(serializers.ModelSerializer):
         recipes = Recipe.objects.filter(
             author=obj.author
         )
-        if recipes_limit:
-            try:
-                type(recipes_limit) == int
-                recipes = recipes[:(int(recipes_limit))]
-            except ValueError:
-                return f'Ожидается числовой тип данных: {recipes_limit}'
-        else:
-            recipes = recipes
+        if recipes_limit and recipes_limit == int(recipes_limit):
+            recipes = recipes[:(int(recipes_limit))]
+            raise serializers.ValidationError(
+                f'Ожидается числовой тип данных: {recipes_limit}'
+            )
+        recipes = recipes
         return FavoriteRecipeSerializer(
             recipes,
             many=True,

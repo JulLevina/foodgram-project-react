@@ -5,6 +5,7 @@ from rest_framework import serializers
 
 from recipes.models import (
     Recipe,
+    Ingredient,
     RecipeIngredient,
     Tag
 )
@@ -22,9 +23,6 @@ class Base64ImageField(serializers.ImageField):
             ext = format.split('/')[-1]
             data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
         return super().to_internal_value(data)
-
-    # def to_representation(self, value):
-    #     return value.url
 
 
 class RecipeReadSerializer(serializers.ModelSerializer):
@@ -95,7 +93,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         for ingredient in value:
             if not (int(ingredient.get('amount')) >= 1):
                 raise serializers.ValidationError(
-                    'Количнество ингредиентов должно быть больше 0!'
+                    'Количество ингредиентов должно быть больше 0!'
+                )
+            if not Ingredient.objects.filter(id=ingredient['id']).exists():
+                raise serializers.ValidationError(
+                    'Ингредиент с указанным id не существует!'
                 )
             sorted_ingredients = []
             for key in ingredient:
