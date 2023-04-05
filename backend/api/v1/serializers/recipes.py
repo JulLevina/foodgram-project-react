@@ -99,11 +99,18 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Ингредиент с указанным id не существует!'
                 )
+        return value
+
+    def validate(self, ingredients):
+        for ingredient in ingredients:
             sorted_ingredients = []
             for key in ingredient:
-                if key not in sorted_ingredients:
-                    sorted_ingredients.append(key)
-        return value
+                sorted_ingredients.append(key)
+                if len(sorted_ingredients) != len(set(sorted_ingredients)):
+                    raise serializers.ValidationError(
+                        'Ингредиенты не должны повторяться!'
+                    )
+        return ingredients
 
     def ingredients_creating(self, ingredients, recipe, tags):
         """Создает набор полей для добавления ингредиентов в рецепт. """
