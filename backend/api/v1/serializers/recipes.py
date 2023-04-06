@@ -101,16 +101,16 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                 )
         return value
 
-    def validate(self, ingredients):
+    def validate(self, data):
+        ingredients = data['ingredients']
+        sorted_ingredients = []
         for ingredient in ingredients:
-            sorted_ingredients = []
-            for key in ingredient:
-                sorted_ingredients.append(key)
-                if len(sorted_ingredients) != len(set(sorted_ingredients)):
-                    raise serializers.ValidationError(
-                        'Ингредиенты не должны повторяться!'
-                    )
-        return ingredients
+            if ingredient in sorted_ingredients:
+                raise serializers.ValidationError(
+                    'Ингредиенты не должны повторяться!'
+                )
+            sorted_ingredients.append(ingredient)
+        return data
 
     def ingredients_creating(self, ingredients, recipe, tags):
         """Создает набор полей для добавления ингредиентов в рецепт. """
