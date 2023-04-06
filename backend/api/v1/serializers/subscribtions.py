@@ -61,12 +61,10 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_recipes(self, obj):
         """Возвращает все рецепты данного автора."""
-        request = self.context.get('request')
+        request = self.context['request']
         recipes_limit = request.GET.get('recipes_limit')
-        recipes = Recipe.objects.filter(
-            author=obj.author
-        )
-        if str(recipes_limit).isdigit():
+        recipes = Recipe.objects.filter(author=obj.author)
+        if recipes_limit.isdigit():
             recipes = recipes[:int(recipes_limit)]
         return FavoriteRecipeSerializer(
             recipes,
